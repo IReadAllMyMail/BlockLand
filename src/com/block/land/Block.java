@@ -1,6 +1,18 @@
 package com.block.land;
 
-public class Block {
+import org.andengine.entity.sprite.Sprite;
+import org.andengine.opengl.texture.region.ITextureRegion;
+import org.andengine.opengl.vbo.VertexBufferObjectManager;
+
+public class Block extends Sprite {
+
+	public Block(float pX, float pY, ITextureRegion pTextureRegion,
+			VertexBufferObjectManager pVertexBufferObjectManager) {
+		super(pX, pY, pTextureRegion, pVertexBufferObjectManager);
+		
+		
+	}
+	
 
 	public float x;
 	public float y;
@@ -11,9 +23,6 @@ public class Block {
 	//
 	//Constructors
 	//
-	public Block(float x,float y, boolean gravity,int textureIndex,float friction){
-		
-	}
 	
 	//
 	//Getters and Setters

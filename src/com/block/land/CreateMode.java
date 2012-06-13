@@ -1,6 +1,8 @@
 package com.block.land;
 
 		import org.andengine.engine.camera.Camera;
+import org.andengine.engine.handler.IUpdateHandler;
+import org.andengine.engine.handler.timer.TimerHandler;
 import org.andengine.engine.options.EngineOptions;
 import org.andengine.engine.options.ScreenOrientation;
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
@@ -47,6 +49,8 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 			// Constants
 			// ===========================================================
 			public Sprite face;
+			Camera camera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+			public Sprite wall;
 			private static final int CAMERA_WIDTH = 800;
 			private static final int CAMERA_HEIGHT = 480;
 			float mTouchX;
@@ -84,7 +88,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 
 			public EngineOptions onCreateEngineOptions() {
 
-				final Camera camera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+				
 
 				return new EngineOptions(true, ScreenOrientation.LANDSCAPE_FIXED, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), camera);
 			}
@@ -94,7 +98,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 				BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
 
 				this.mBitmapTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 65,65, TextureOptions.BILINEAR);
-				this.mBoxFaceTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mBitmapTextureAtlas, this, "player.png", 0, 0, 1,1); // 72x72
+				this.mBoxFaceTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mBitmapTextureAtlas, this, "crate.png", 0, 0, 1,1); // 72x72
 				this.mWallTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(),72,72,TextureOptions.BILINEAR);
 				this.mWallTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mWallTextureAtlas, this, "wall.png", 0, 0, 1,1); // 72x72
 				this.mBackTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(),800,480,TextureOptions.BILINEAR);
@@ -134,23 +138,47 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 				this.mScene.attachChild(back);
 				
 				
-				addFace(0,412);
 				///Level Building code]
-				addWall(0,336);
-				addWall(72,336);
-				addWall(144,336);
-				addWall(216,336);
-				addWall(288,336);
+				addWall(0,408);
+				addWall(72,408);
+				addWall(144,408);
+				addWall(216,408);
+				addWall(288,408);
+				addWall(360,408);
+				addWall(432,408);
+				addWall(504,408);
+				addWall(576,408);
+				addWall(648,408);
+				addWall(720,408);
+				addWall(792,408);
 				addWall(0,192);
 				addWall(72,192);
 				addWall(144,192);
 				addWall(216,192);
+				addFace(72,336);
 				
-
+				
+				
+				this.mScene.onUpdate(0.1f);
 				this.mScene.registerUpdateHandler(this.mPhysicsWorld);
 				final Vector2 gravity = Vector2Pool.obtain(gravityX,gravityY);
 				this.mPhysicsWorld.setGravity(gravity);
 				Vector2Pool.recycle(gravity);
+				mScene.registerUpdateHandler(new IUpdateHandler() {
+	                public void onUpdate(float pSecondsElapsed) {
+	                camera.setCenter(face.getX(), face.getY());
+	                }
+	              
+
+					public void reset() {
+						// TODO Auto-generated method stub
+						
+					}}); 
+
+	                    //Place what you want to happen here!
+	                   
+
+				
 		return mScene;
 		}
 		
@@ -159,31 +187,23 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 					if(pSceneTouchEvent.isActionDown()) {
 						
 						
-						if(pSceneTouchEvent.getX()>320){
-							gravityY=0;
-							gravityX=20;
-						}
-						if(pSceneTouchEvent.getX()<160){
-							gravityY=0;
-							gravityX=-20;
-						}
-						if(pSceneTouchEvent.getY()>240 && (pSceneTouchEvent.getX()>266 && pSceneTouchEvent.getX()<532)){
-							gravityY=20;
-							gravityX=0;
-						}
-						if(pSceneTouchEvent.getY()<240 && (pSceneTouchEvent.getX()>266 && pSceneTouchEvent.getX()<532)){
-							gravityY=-20;
-							gravityX=0;
-						}
+						gravityY=-25;
 						
 						final Vector2 gravity = Vector2Pool.obtain(gravityX,gravityY);
 						this.mPhysicsWorld.setGravity(gravity);
 						Vector2Pool.recycle(gravity);
-						System.out.println(pSceneTouchEvent.getX());
 					
 					}
 					
-				}	
+					if(pSceneTouchEvent.isActionUp()){
+						gravityY=25;
+						final Vector2 gravity = Vector2Pool.obtain(gravityX,gravityY);
+						this.mPhysicsWorld.setGravity(gravity);
+						Vector2Pool.recycle(gravity);
+					}
+					
+				}
+				
 				
 				return false;
 			}
@@ -196,7 +216,9 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 			}
 
 			public void onAccelerationChanged(final AccelerationData pAccelerationData) {
-				
+				final Vector2 gravity = Vector2Pool.obtain(pAccelerationData.getX()*3, gravityY);
+				this.mPhysicsWorld.setGravity(gravity);
+				Vector2Pool.recycle(gravity);
 			}
 
 			@Override
@@ -232,14 +254,15 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 			private void addWall(final float pX, final float pY) {
 				
 				final Body body;
-				Debug.d("Faces: " + this.mFaceCount);
+				
 					    mTouchX = pX;
 		                mTouchY = pY;
-		                face = new Sprite(pX, pY, this.mWallTextureRegion, this.getVertexBufferObjectManager());
-						body = PhysicsFactory.createBoxBody(this.mPhysicsWorld, face, BodyType.StaticBody, FIXTURE_DEF);
-				this.mScene.attachChild(face);
-				this.mPhysicsWorld.registerPhysicsConnector(new PhysicsConnector(face, body, true, true));
+		                Sprite wall = new Sprite(pX, pY, this.mWallTextureRegion, this.getVertexBufferObjectManager());
+						body = PhysicsFactory.createBoxBody(this.mPhysicsWorld, wall, BodyType.StaticBody, FIXTURE_DEF);
+				this.mScene.attachChild(wall);
+				this.mPhysicsWorld.registerPhysicsConnector(new PhysicsConnector(wall, body, true, true));
 			}
+			
 			
 			
 			// ===========================================================
