@@ -24,17 +24,22 @@ import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegion
 import org.andengine.opengl.texture.region.TiledTextureRegion;
 import org.andengine.ui.activity.SimpleBaseGameActivity;
 import org.andengine.util.debug.Debug;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import android.content.Context;
 import android.hardware.SensorManager;
-
+import android.os.Vibrator;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.Manifold;
+import com.badlogic.gdx.physics.box2d.World;
 
 		/**
 		 * (c) 2010 Nicolas Gramlich
@@ -50,7 +55,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 			public Sprite face;
 
 			private BoundCamera mBoundChaseCamera;
-			
+			public float tilt =0;
 			public Sprite wall;
 			float mTouchX;
 			float mTouchY;
@@ -58,8 +63,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 
 			// ===========================================================
 			// Fields
-			// ===========================================================
-
+			// =========================================================== 
 			private BitmapTextureAtlas mBitmapTextureAtlas;
 			private TiledTextureRegion mBoxFaceTextureRegion;
 			
@@ -67,11 +71,11 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 			private TiledTextureRegion mWallTextureRegion;
 			
 			private Scene mScene;
-			
 			private PhysicsWorld mPhysicsWorld;
-			private int mFaceCount = 0;
-			public int gravityX=25,gravityY;
-			public int wallCount=0;
+			public int gravityX=25,gravityY=25;
+			
+			private World mWorld;
+			
 			// ===========================================================
 			// Constructors
 			// ===========================================================
@@ -89,7 +93,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 			// ===========================================================
 
 			public EngineOptions onCreateEngineOptions() {
-				this.mBoundChaseCamera = new BoundCamera(360, 47, 800, 480, 0, 1512, -248, 480);
+				this.mBoundChaseCamera = new BoundCamera(360, 47, 640, 330, 0, 1512, -248, 480);
 				
 
 				return new EngineOptions(true, ScreenOrientation.LANDSCAPE_FIXED, new RatioResolutionPolicy(855, 480), mBoundChaseCamera);
@@ -99,11 +103,8 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 			public void onCreateResources() {
 				BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
 				
-				this.mBackTopTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 3000,375, TextureOptions.BILINEAR);
-				this.mBackTopTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mBackTopTextureAtlas, this, "backtop.png", 0, 0, 1,1);
-				
-				this.mBitmapTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 65,65, TextureOptions.BILINEAR);
-				this.mBoxFaceTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mBitmapTextureAtlas, this, "crate.png", 0, 0, 1,1); 
+				this.mBitmapTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 50,64, TextureOptions.BILINEAR);
+				this.mBoxFaceTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mBitmapTextureAtlas, this, "bob.png", 0, 0, 1,1); 
 				
 				this.mWallTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(),72,72,TextureOptions.BILINEAR);
 				this.mWallTextureRegion = BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(this.mWallTextureAtlas, this, "wall.png", 0, 0, 1,1);
@@ -116,7 +117,8 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 				this.mWallTextureAtlas.load();
 				CreateMode.this.mBoundChaseCamera.setBoundsEnabled(true);
 			}
-
+			
+			
 			@Override
 			public Scene onCreateScene() {
 				this.mEngine.registerUpdateHandler(new FPSLogger());
@@ -124,6 +126,8 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 				this.mScene = new Scene();
 				this.mScene.setOnSceneTouchListener(this);
 				this.mPhysicsWorld = new PhysicsWorld(new Vector2(0, SensorManager.GRAVITY_EARTH), false);
+				
+				
 				
 				//Set BackGround Here.
 				this.mScene.setBackground(new Background(.05f, .05f, .05f));
@@ -146,16 +150,39 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 				addWall(432,120);
 				
 				addFace(360,47);
-				
 				mBoundChaseCamera.setChaseEntity(face);
 				
-				
+
+				final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);   
 				
 				this.mScene.onUpdate(0.05f);
 				this.mScene.registerUpdateHandler(this.mPhysicsWorld);
 				final Vector2 gravity = Vector2Pool.obtain(gravityX,gravityY);
 				this.mPhysicsWorld.setGravity(gravity);
 				Vector2Pool.recycle(gravity);
+				
+				
+				this.mPhysicsWorld.setContactListener(new ContactListener() {
+					@Override
+					public void beginContact(final Contact pContact) {
+						vibrator.vibrate(24);
+						System.out.println(pContact.getFixtureA().getBody().getUserData());
+						
+						
+				   
+					}
+					@Override
+					public void endContact(final Contact pContact) {
+					}
+					@Override
+					public void preSolve(Contact contact,Manifold oldManifold) {
+
+					}
+					@Override
+					public void postSolve(Contact contact,ContactImpulse impulse) {         
+					}
+					});
+
 				
 				mScene.registerUpdateHandler(new IUpdateHandler() {
 	                
@@ -168,7 +195,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 
 					@Override
 					public void onUpdate(float pSecondsElapsed) {
-						// TODO Auto-generated method stub
+						mBoundChaseCamera.setRotation(tilt);
 						
 					}}); 
 	                   
@@ -185,7 +212,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 					if(pSceneTouchEvent.isActionDown()) {
 
 						
-						gravityY=-25;
+						gravityY=-15;
 						final Vector2 gravity = Vector2Pool.obtain(gravityX,gravityY);
 						this.mPhysicsWorld.setGravity(gravity);
 						Vector2Pool.recycle(gravity);
@@ -213,7 +240,10 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 			}
 
 			public void onAccelerationChanged(final AccelerationData pAccelerationData) {
-				final Vector2 gravity = Vector2Pool.obtain(pAccelerationData.getX()*4, gravityY);
+				final Vector2 gravity = Vector2Pool.obtain(pAccelerationData.getX()*3, gravityY);
+				tilt=(pAccelerationData.getX());
+				
+				
 				this.mPhysicsWorld.setGravity(gravity);
 				Vector2Pool.recycle(gravity);
 			}
@@ -237,15 +267,13 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 			// ===========================================================
 
 			private void addFace(final float pX, final float pY) {
-				this.mFaceCount++;
-				
-				Debug.d("Faces: " + this.mFaceCount);
-					    mTouchX = pX;
-		                mTouchY = pY;
+		                Body guy = null;
 		                face = new Sprite(pX, pY, this.mBoxFaceTextureRegion, this.getVertexBufferObjectManager());
-						Body guy = PhysicsFactory.createBoxBody(this.mPhysicsWorld, face, BodyType.DynamicBody, FIXTURE_DEF);
+						guy = PhysicsFactory.createBoxBody(this.mPhysicsWorld, face, BodyType.DynamicBody, FIXTURE_DEF);
+						guy.setFixedRotation(false);
 				this.mScene.attachChild(face);
 				this.mPhysicsWorld.registerPhysicsConnector(new PhysicsConnector(face, guy, true, true));
+				
 				final Vector2 gravity = Vector2Pool.obtain(gravityX,gravityY);
 				this.mPhysicsWorld.setGravity(gravity);
 				Vector2Pool.recycle(gravity);
@@ -253,17 +281,30 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 			}
 			
 			private void addWall(final float pX, final float pY) {
-				
-				final Body body;
-						wallCount++;
-					    mTouchX = pX;
-		                mTouchY = pY;
 		                Sprite wall = new Sprite(pX, pY, this.mWallTextureRegion, this.getVertexBufferObjectManager());
+		                Body body;
 						body= PhysicsFactory.createBoxBody(this.mPhysicsWorld, wall, BodyType.StaticBody, FIXTURE_DEF);
+						
 						
 				this.mScene.attachChild(wall);
 				this.mPhysicsWorld.registerPhysicsConnector(new PhysicsConnector(wall, body, true, true));
+				wall.setUserData("wall");
 			}
+			
+			 private JSONObject storeMyBodyInfo(final String myDescription, final Sprite mySprite, final Boolean myKill)
+		        {
+		// STORE INFORMATION ABOUT THE CURRENT BODY SO THAT WE HAVE ENOUGH INFO TO DELETE IT LATER
+		                JSONObject myObject = new JSONObject();
+		       
+		                try {
+		                        myObject.put("myDescription", myDescription);
+		                        myObject.put("killMe", myKill);
+		                        myObject.put("mySprite", mySprite);
+		                } catch (JSONException e) {
+		                        Debug.d("storeMyBodyInfo FAILED: " + e);
+		                }
+		                return myObject;
+		        }
 			
 			
 			
