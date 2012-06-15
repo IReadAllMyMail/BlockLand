@@ -3,5 +3,6 @@
 
     <string name="hello">Hello World, BlockLandActivity!</string>
     <string name="app_name">JoksBloks</string>
+    <string name="restart">Restart</string>
 
 </resources>
